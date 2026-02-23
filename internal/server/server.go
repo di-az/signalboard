@@ -3,7 +3,6 @@ package server
 import (
 	"commuteboard/internal/store"
 	"context"
-	"encoding/json"
 	"log"
 	"net"
 	"net/http"
@@ -76,20 +75,4 @@ func (s *HttpServer) GetRouteByID(w http.ResponseWriter, r *http.Request) {
 func (s *HttpServer) CheckHealth(w http.ResponseWriter, r *http.Request) {
 	healthMessage := map[string]string{"status": "ok"}
 	writeJSON(w, http.StatusOK, healthMessage)
-}
-
-func writeJSON(w http.ResponseWriter, status int, data any) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-
-	// if data == nil {
-	// 	return errors.New("empty response body")
-	// }
-
-	return json.NewEncoder(w).Encode(data)
-}
-
-func writeError(w http.ResponseWriter, err error) {
-	// log.Println(err.Error())
-	_ = writeJSON(w, http.StatusInternalServerError, err.Error())
 }

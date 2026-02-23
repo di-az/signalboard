@@ -33,7 +33,7 @@ func NewRouteEngine(
 }
 
 func (e *RouteEngine) checkLocations() {
-	// log.Printf("Ticking")
+	log.Printf("engine tick at %s", time.Now())
 	now := time.Now()
 
 	for _, location := range e.Locations {
