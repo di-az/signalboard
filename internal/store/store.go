@@ -7,31 +7,29 @@ import (
 
 type RouteStore struct {
 	mu     sync.RWMutex
-	routes []domain.Route
+	routes map[string]domain.Route
 }
 
 func NewRouteStore() *RouteStore {
-	return &RouteStore{}
+	return &RouteStore{routes: make(map[string]domain.Route)}
 }
 
-func (s *RouteStore) Add(route domain.Route) {
+func (s *RouteStore) Set(route domain.Route) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.routes = append(s.routes, route)
-
-	// Optional: keep only last 100
-	// if len(s.routes) > 100 {
-	// 	s.routes = s.routes[len(s.routes)-100:]
-	// }
+	key := route.Finish.Name
+	s.routes[key] = route
 }
 
 func (s *RouteStore) GetAll() []domain.Route {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// Return copy to avoid race issues
-	cpy := make([]domain.Route, len(s.routes))
-	copy(cpy, s.routes)
-	return cpy
+	result := make([]domain.Route, 0, len(s.routes))
+	for _, r := range s.routes {
+		result = append(result, r)
+	}
+	return result
+
 }

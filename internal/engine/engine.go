@@ -61,7 +61,7 @@ func (e *RouteEngine) Run() {
 			}
 
 			location.Schedule.LastUpdated = now
-			e.Store.Add(route)
+			e.Store.Set(route)
 
 			log.Printf("Route updated: %s -> %s (%d min)",
 				e.Home.Name,

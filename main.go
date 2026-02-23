@@ -3,6 +3,7 @@ package main
 import (
 	"commuteboard/internal/domain"
 	"commuteboard/internal/engine"
+	"commuteboard/internal/server"
 	"commuteboard/internal/store"
 	"fmt"
 	"time"
@@ -30,7 +31,7 @@ var work = domain.Location{
 			time.Thursday: {
 				{Start: 8 * time.Hour, End: 10 * time.Hour},
 			},
-			time.Saturday: {
+			time.Monday: {
 				{Start: 1 * time.Hour, End: 23 * time.Hour},
 			},
 		},
@@ -54,12 +55,13 @@ func main() {
 	fmt.Println("Running server")
 
 	locations := []*domain.Location{&work, &piano}
-
 	store := store.NewRouteStore()
-
 	engine := engine.NewRouteEngine(home, locations, store, UpdateRate, tickRate)
 
 	go engine.Run()
 
+	server := server.NewHttpServer(store)
+	server.Run()
+	// server.GetRoutes()
 	select {}
 }
