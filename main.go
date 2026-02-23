@@ -66,7 +66,7 @@ func main() {
 	locations := []*domain.Location{&work, &piano}
 	store := store.NewRouteStore()
 	engine := engine.NewRouteEngine(home, locations, store, UpdateRate, tickRate)
-	server := server.NewHttpServer(store)
+	server := server.NewHttpServer(store, engine)
 
 	// Run HTTP server
 	go func() {

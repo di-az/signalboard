@@ -16,6 +16,12 @@ type RouteEngine struct {
 	TickRate   time.Duration
 }
 
+type Status struct {
+	TickRate   string `json:"tick_rate"`
+	UpdateRate string `json:"update_rate"`
+	Locations  int    `json:"locations"`
+}
+
 func NewRouteEngine(
 	home domain.Location,
 	locations []*domain.Location,
@@ -78,6 +84,14 @@ func (e *RouteEngine) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
+	}
+}
+
+func (e *RouteEngine) Status() Status {
+	return Status{
+		TickRate:   e.TickRate.String(),
+		UpdateRate: e.UpdateRate.String(),
+		Locations:  len(e.Locations),
 	}
 }
 

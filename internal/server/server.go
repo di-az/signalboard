@@ -1,6 +1,7 @@
 package server
 
 import (
+	"commuteboard/internal/engine"
 	"commuteboard/internal/store"
 	"context"
 	"log"
@@ -11,11 +12,12 @@ import (
 const PORT = ":3333"
 
 type HttpServer struct {
-	store *store.RouteStore
+	store  *store.RouteStore
+	engine *engine.RouteEngine
 }
 
-func NewHttpServer(store *store.RouteStore) *HttpServer {
-	return &HttpServer{store: store}
+func NewHttpServer(store *store.RouteStore, engine *engine.RouteEngine) *HttpServer {
+	return &HttpServer{store: store, engine: engine}
 }
 
 func (s *HttpServer) Run(ctx context.Context) error {
@@ -23,6 +25,7 @@ func (s *HttpServer) Run(ctx context.Context) error {
 	mux.HandleFunc("/routes", s.GetRoutes)
 	mux.HandleFunc("/routes/{id}", s.GetRouteByID)
 	mux.HandleFunc("/health", s.CheckHealth)
+	mux.HandleFunc("/engine/status", s.EngineStatus)
 
 	server := &http.Server{
 		Addr:    PORT,
@@ -64,15 +67,20 @@ func (s *HttpServer) GetRouteByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	log.Printf("Getting route for id: %v\n", id)
 	route, err := s.store.GetByID(id)
-	routeResp := NewRouteResponse(route)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
+	routeResp := NewRouteResponse(route)
 	writeJSON(w, http.StatusOK, routeResp)
 }
 
 func (s *HttpServer) CheckHealth(w http.ResponseWriter, r *http.Request) {
 	healthMessage := map[string]string{"status": "ok"}
 	writeJSON(w, http.StatusOK, healthMessage)
+}
+
+func (s *HttpServer) EngineStatus(w http.ResponseWriter, r *http.Request) {
+	status := s.engine.Status()
+	writeJSON(w, http.StatusOK, status)
 }
