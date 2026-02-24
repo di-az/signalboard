@@ -5,6 +5,7 @@ import (
 	"commuteboard/internal/store"
 	"context"
 	"log"
+	"sync/atomic"
 	"time"
 )
 
@@ -14,12 +15,16 @@ type RouteEngine struct {
 	Store      *store.RouteStore
 	UpdateRate time.Duration
 	TickRate   time.Duration
+	running    atomic.Bool
+	lastTick   atomic.Value
 }
 
 type Status struct {
+	Running    bool   `json:"runnning"`
 	TickRate   string `json:"tick_rate"`
 	UpdateRate string `json:"update_rate"`
 	Locations  int    `json:"locations"`
+	LastTick   int    `json:"last_tick"`
 }
 
 func NewRouteEngine(
@@ -41,6 +46,7 @@ func NewRouteEngine(
 func (e *RouteEngine) checkLocations() {
 	log.Printf("engine tick at %s", time.Now())
 	now := time.Now()
+	e.lastTick.Store(now)
 
 	for _, location := range e.Locations {
 		// Skip if not in time range
@@ -71,6 +77,9 @@ func (e *RouteEngine) checkLocations() {
 }
 
 func (e *RouteEngine) Run(ctx context.Context) {
+	e.running.Store(true)
+	defer e.running.Store(false)
+
 	ticker := time.NewTicker(e.TickRate)
 	defer ticker.Stop()
 
@@ -82,6 +91,7 @@ func (e *RouteEngine) Run(ctx context.Context) {
 		case <-ticker.C:
 			e.checkLocations()
 		case <-ctx.Done():
+			log.Println("Route engine shutting down")
 			return
 		}
 	}
@@ -89,6 +99,7 @@ func (e *RouteEngine) Run(ctx context.Context) {
 
 func (e *RouteEngine) Status() Status {
 	return Status{
+		Running:    e.running.Load(),
 		TickRate:   e.TickRate.String(),
 		UpdateRate: e.UpdateRate.String(),
 		Locations:  len(e.Locations),
