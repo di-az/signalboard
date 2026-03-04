@@ -57,14 +57,14 @@ func (s *HttpServer) Run(ctx context.Context) error {
 func (s *HttpServer) GetRoutes(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Getting routes\n")
 	var responses []CommuteResponse
-	for _, commute := range s.store.GetAll() {
-		origin := s.engine.GetLocationByID(commute.OriginID)
-		destination := s.engine.GetLocationByID(commute.DestinationID)
+	for _, route := range s.store.GetAll() {
+		origin := s.engine.GetLocationByID(route.OriginID)
+		destination := s.engine.GetLocationByID(route.DestinationID)
 		if origin == nil || destination == nil {
 			continue
 		}
 
-		newComm := NewCommuteResponse(*origin, *destination, commute)
+		newComm := NewCommuteResponse(*origin, *destination, route)
 		responses = append(responses, newComm)
 	}
 	writeJSON(w, http.StatusOK, responses)
@@ -74,20 +74,20 @@ func (s *HttpServer) GetRouteByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	log.Printf("Getting route for id: %v\n", id)
 
-	commute, err := s.store.GetByID(id)
+	route, err := s.store.GetByID(id)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 
-	origin := s.engine.GetLocationByID(commute.OriginID)
-	destination := s.engine.GetLocationByID(commute.DestinationID)
+	origin := s.engine.GetLocationByID(route.OriginID)
+	destination := s.engine.GetLocationByID(route.DestinationID)
 	if origin == nil || destination == nil {
 		writeError(w, errors.New("missing origin or destination"))
 		return
 	}
 
-	routeResp := NewCommuteResponse(*origin, *destination, commute)
+	routeResp := NewCommuteResponse(*origin, *destination, route)
 	writeJSON(w, http.StatusOK, routeResp)
 }
 

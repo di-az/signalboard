@@ -5,8 +5,7 @@ import (
 	"commuteboard/internal/domain"
 	"context"
 	"encoding/json"
-	"github.com/google/uuid"
-	"io"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -80,26 +79,34 @@ func toMatrixDestination(loc *domain.Location) (matrixDestination, error) {
 
 func (e *RouteEngine) computeRouteMatrix(
 	ctx context.Context,
-	destinations []*domain.Location,
-) ([]domain.Commute, error) {
-	// Transform data into request body for API request
-	origin, err := toMatrixOrigin(&e.Home)
-	if err != nil {
-		return nil, err
+	routes []*domain.Route,
+) ([]domain.RouteMeasurement, error) {
+	if len(routes) == 0 {
+		return nil, nil
 	}
 
-	var matrixDestinations []matrixDestination
-	for _, loc := range destinations {
-		dest, err := toMatrixDestination(loc)
+	// Build origin/destination list
+	var origins []matrixOrigin
+	var destinations []matrixDestination
+
+	for _, r := range routes {
+		o, err := toMatrixOrigin(r.Origin)
 		if err != nil {
 			return nil, err
 		}
-		matrixDestinations = append(matrixDestinations, dest)
+
+		d, err := toMatrixDestination(r.Destination)
+		if err != nil {
+			return nil, err
+		}
+
+		origins = append(origins, o)
+		destinations = append(destinations, d)
 	}
 
 	reqBody := matrixRequest{
-		Origins:           []matrixOrigin{origin},
-		Destinations:      matrixDestinations,
+		Origins:           origins,
+		Destinations:      destinations,
 		TravelMode:        TRAVEL_MODE,
 		RoutingPreference: ROUTING_PREFERENCE,
 		// DepartureTime:     time.Now().UTC().Format(time.RFC3339),
@@ -138,33 +145,47 @@ func (e *RouteEngine) computeRouteMatrix(
 	}
 	defer resp.Body.Close()
 
-	log.Printf("Google response status: %s\n", resp.Status)
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	log.Printf("Raw response:\n%s\n", string(bodyBytes))
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("matrix request failed: %s", resp.Status)
+	}
+
+	// log.Printf("Google response status: %s\n", resp.Status)
+	// bodyBytes, _ := io.ReadAll(resp.Body)
+	// log.Printf("Raw response:\n%s\n", string(bodyBytes))
 
 	var elements []RouteMatrixElement
-	if err := json.Unmarshal(bodyBytes, &elements); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&elements); err != nil {
 		return nil, err
 	}
 
-	var commutes []domain.Commute
-	for _, el := range elements {
+	now := time.Now()
+
+	var routeMeasurements []domain.RouteMeasurement
+	// Update in-memory routes + persist
+	// var commutes []domain.Route
+	for i, el := range elements {
+		if i >= len(routes) {
+			continue
+		}
+
 		duration, err := time.ParseDuration(el.Duration)
 		if err != nil {
 			return nil, err
 		}
 
-		destination := destinations[el.DestinationIndex]
-
-		commutes = append(commutes, domain.Commute{
-			ID:             uuid.NewString(),
-			OriginID:       e.Home.ID,
-			DestinationID:  destination.ID,
-			DistanceMeters: el.DistanceMeters,
-			Duration:       duration,
-			RecordedAt:     time.Now(),
+		r := routes[i]
+		routeMeasurements = append(routeMeasurements, domain.RouteMeasurement{
+			RouteID:         r.ID,
+			DistanceMeters:  el.DistanceMeters,
+			DurationSeconds: duration,
+			RecordedAt:      now,
 		})
 	}
 
-	return commutes, nil
+	// Persist measurement
+	if err := e.Store.UpdateMeasurements(ctx, routeMeasurements); err != nil {
+		return nil, err
+	}
+
+	return routeMeasurements, nil
 }

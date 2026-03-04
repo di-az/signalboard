@@ -10,30 +10,31 @@ type TimeRange struct {
 }
 
 type Schedule struct {
-	Days        map[time.Weekday][]TimeRange
-	LastUpdated time.Time
+	Days map[time.Weekday][]TimeRange
 }
 
 type Location struct {
-	ID        string
+	ID        int
 	Name      string
 	Latitude  float64
 	Longitude float64
-	Schedule  Schedule
 }
 
 type Route struct {
-	Origin      Location
-	Destination Location
+	ID              int
+	Origin          *Location
+	Destination     *Location
+	DistanceMeters  int
+	DurationSeconds time.Duration
+	RecordedAt      time.Time
+	Schedule        Schedule
 }
 
-type Commute struct {
-	ID             string
-	OriginID       string
-	DestinationID  string
-	DistanceMeters int
-	Duration       time.Duration
-	RecordedAt     time.Time
+type RouteMeasurement struct {
+	RouteID         int
+	DistanceMeters  int
+	DurationSeconds time.Duration
+	RecordedAt      time.Time
 }
 
 func (s Schedule) ShouldRunNow(t time.Time) bool {
@@ -52,4 +53,12 @@ func (s Schedule) ShouldRunNow(t time.Time) bool {
 	}
 
 	return false
+}
+
+func (c Route) IsFresh(now time.Time, updateRate time.Duration) bool {
+	timeToUpdate := c.RecordedAt.Add(updateRate)
+	if timeToUpdate.Before(now) {
+		return false
+	}
+	return true
 }

@@ -11,21 +11,19 @@ import (
 )
 
 type RouteEngine struct {
-	Home          domain.Location
-	Locations     []*domain.Location
-	locationIndex map[string]*domain.Location
-	Store         *store.RouteStore
-	UpdateRate    time.Duration
-	TickRate      time.Duration
-	running       atomic.Bool
-	lastMeasured  map[string]time.Time
-	lastTick      atomic.Value
-	client        *http.Client
-	apiKey        string
+	Routes map[int]*domain.Route
+	Store  *store.RouteStore
+
+	UpdateRate time.Duration
+	TickRate   time.Duration
+	running    atomic.Bool
+	lastTick   atomic.Value
+	client     *http.Client
+	apiKey     string
 }
 
 type Status struct {
-	Running    bool   `json:"runnning"`
+	Running    bool   `json:"running"`
 	TickRate   string `json:"tick_rate"`
 	UpdateRate string `json:"update_rate"`
 	Locations  int    `json:"locations"`
@@ -33,71 +31,81 @@ type Status struct {
 }
 
 func NewRouteEngine(
-	home domain.Location,
-	locations []*domain.Location,
+	ctx context.Context,
 	store *store.RouteStore,
 	updateRate time.Duration,
 	tickRate time.Duration,
 	apiKey string,
-) *RouteEngine {
-	locationIndex := make(map[string]*domain.Location)
-	locationIndex[home.ID] = &home
-
-	for _, loc := range locations {
-		locationIndex[loc.ID] = loc
+) (*RouteEngine, error) {
+	routes, err := store.GetRoutesWithSchedules(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	return &RouteEngine{
-		Home:          home,
-		Locations:     locations,
-		locationIndex: locationIndex,
-		Store:         store,
-		UpdateRate:    updateRate,
-		TickRate:      tickRate,
-		lastMeasured:  make(map[string]time.Time),
-		client:        &http.Client{Timeout: 5 * time.Second},
-		apiKey:        apiKey,
+	routeMap := make(map[int]*domain.Route, len(routes))
+	for _, r := range routes {
+		routeMap[r.ID] = r
 	}
+
+	engine := &RouteEngine{
+		Routes:     routeMap,
+		Store:      store,
+		UpdateRate: updateRate,
+		TickRate:   tickRate,
+		client:     &http.Client{Timeout: 5 * time.Second},
+		apiKey:     apiKey,
+	}
+
+	return engine, nil
 }
 
 func (e *RouteEngine) checkLocations(ctx context.Context) {
-	log.Printf("engine tick at %s", time.Now())
+	// log.Printf("engine tick at %s", time.Now())
 	now := time.Now()
 	e.lastTick.Store(now)
 
-	var activeDestinations []*domain.Location
+	var activeRoutes []*domain.Route
 
-	for _, location := range e.Locations {
+	for _, route := range e.Routes {
 		// Skip if not in time range
-		if !location.Schedule.ShouldRunNow(now) {
-			e.Store.Delete(location.ID)
+		if !route.Schedule.ShouldRunNow(now) {
 			continue
 		}
 
-		// Skip if recently updated
-		if now.Sub(location.Schedule.LastUpdated) < e.UpdateRate {
+		// Skip if route is fresh
+		if route.IsFresh(now, e.UpdateRate) {
 			continue
 		}
 
-		activeDestinations = append(activeDestinations, location)
+		activeRoutes = append(activeRoutes, route)
 	}
 
-	if len(activeDestinations) == 0 {
+	if len(activeRoutes) == 0 {
+		// log.Println("NO ACTIVE")
 		return
 	}
 
-	commutes, err := e.computeRouteMatrix(ctx, activeDestinations)
-	if err != nil {
-		log.Printf("error computing matrix: %v\n", err)
-		return
-	}
+	// log.Println("HERE")
+	// for _, r := range activeRoutes {
+	// 	log.Println(*r)
+	// }
 
-	for _, comm := range commutes {
-		// activeDestinations[i].Schedule.LastUpdated = now
-		e.lastMeasured[comm.DestinationID] = now
-		log.Printf("Setting routes: %v\n", comm)
-		e.Store.Set(comm)
-	}
+	// routes, err := e.computeRouteMatrix(ctx, activeDestinations)
+	// if err != nil {
+	// 	log.Printf("error computing matrix: %v\n", err)
+	// 	return
+	// }
+	//
+	// for _, comm := range routes {
+	// 	// activeDestinations[i].Schedule.LastUpdated = now
+	// 	e.lastMeasured[comm.DestinationID] = now
+	// 	log.Printf("Setting routes: %v\n", comm)
+	// 	err := e.Store.Set(ctx, comm)
+	// 	if err != nil {
+	// 		log.Printf("error saving to db: %v\n", err)
+	// 		return
+	// 	}
+	// }
 }
 
 func (e *RouteEngine) Run(ctx context.Context) {
@@ -126,10 +134,6 @@ func (e *RouteEngine) Status() Status {
 		Running:    e.running.Load(),
 		TickRate:   e.TickRate.String(),
 		UpdateRate: e.UpdateRate.String(),
-		Locations:  len(e.Locations),
+		Locations:  len(e.Routes),
 	}
-}
-
-func (e *RouteEngine) GetLocationByID(id string) *domain.Location {
-	return e.locationIndex[id]
 }

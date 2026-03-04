@@ -6,23 +6,23 @@ import (
 )
 
 type CommuteResponse struct {
-	OriginID        string    `json:"origin_id"`
+	OriginID        int       `json:"origin_id"`
 	OriginName      string    `json:"origin_name"`
-	DestinationID   string    `json:"destination_id"`
+	DestinationID   int       `json:"destination_id"`
 	DestinationName string    `json:"destination_name"`
 	DurationMinutes int       `json:"duration_minutes"`
 	DistanceKM      float64   `json:"distance_km"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
-func NewCommuteResponse(origin domain.Location, destination domain.Location, commute domain.Commute) CommuteResponse {
+func NewCommuteResponse(origin domain.Location, destination domain.Location, route domain.Route) CommuteResponse {
 	return CommuteResponse{
 		OriginID:        origin.ID,
 		OriginName:      origin.Name,
 		DestinationID:   destination.ID,
 		DestinationName: destination.Name,
-		DurationMinutes: int(commute.Duration.Minutes()),
-		DistanceKM:      float64(commute.DistanceMeters) / 1000,
-		UpdatedAt:       commute.RecordedAt,
+		DurationMinutes: int(route.DurationSeconds.Minutes()),
+		DistanceKM:      float64(route.DistanceMeters) / 1000,
+		UpdatedAt:       route.RecordedAt,
 	}
 }
