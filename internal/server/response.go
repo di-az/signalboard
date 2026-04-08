@@ -16,7 +16,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) error {
 	return json.NewEncoder(w).Encode(data)
 }
 
-func writeError(w http.ResponseWriter, err error) {
+func writeError(w http.ResponseWriter, status int, err error) {
 	// log.Println(err.Error())
-	_ = writeJSON(w, http.StatusInternalServerError, err.Error())
+	_ = writeJSON(w, status, err.Error())
 }
