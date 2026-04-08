@@ -4,6 +4,7 @@ import (
 	"commuteboard/internal/engine"
 	"commuteboard/internal/store"
 	"context"
+	"errors"
 	"log"
 	"net"
 	"net/http"
@@ -25,7 +26,7 @@ func (s *HttpServer) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/routes", s.GetRoutes)
 	mux.HandleFunc("/routes/active", s.GetActiveRoutes)
-	// mux.HandleFunc("/routes/{id}", s.GetRouteByID)
+	mux.HandleFunc("/routes/refresh", s.RefreshRoutes)
 	mux.HandleFunc("/health", s.CheckHealth)
 	mux.HandleFunc("/engine/status", s.EngineStatus)
 
@@ -82,6 +83,20 @@ func (s *HttpServer) GetActiveRoutes(w http.ResponseWriter, r *http.Request) {
 
 	SortRouteResponseSlice(active)
 	writeJSON(w, http.StatusOK, active)
+}
+
+func (s *HttpServer) RefreshRoutes(w http.ResponseWriter, r *http.Request) {
+	log.Println("POST /routes/refresh")
+
+	err := s.engine.RefreshNow(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, errors.New("failed to refresh routes"))
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"status": "refresh triggered",
+	})
 }
 
 // func (s *HttpServer) GetRouteByID(w http.ResponseWriter, r *http.Request) {
