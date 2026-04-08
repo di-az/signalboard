@@ -62,10 +62,12 @@ func NewRouteEngine(
 	return engine, nil
 }
 
-func (e *RouteEngine) checkLocations(ctx context.Context) {
+func (e *RouteEngine) updateRoutes(ctx context.Context, force bool) {
 	log.Printf("engine tick at %s", time.Now())
 	now := time.Now()
-	e.lastTick.Store(now)
+	if !force {
+		e.lastTick.Store(now)
+	}
 
 	var activeRoutes []*domain.Route
 
@@ -76,7 +78,7 @@ func (e *RouteEngine) checkLocations(ctx context.Context) {
 		}
 
 		// Skip if route is fresh
-		if route.IsFresh(now, e.UpdateRate) {
+		if !force && route.IsFresh(now, e.UpdateRate) {
 			continue
 		}
 
@@ -115,12 +117,12 @@ func (e *RouteEngine) Run(ctx context.Context) {
 	defer ticker.Stop()
 
 	log.Printf("Route engine started\n")
-	e.checkLocations(ctx)
+	e.updateRoutes(ctx, false)
 
 	for {
 		select {
 		case <-ticker.C:
-			e.checkLocations(ctx)
+			e.updateRoutes(ctx, false)
 		case <-ctx.Done():
 			log.Println("Route engine shutting down")
 			return
@@ -149,4 +151,9 @@ func (e *RouteEngine) GetRoutes() []domain.Route {
 		return routes[i].ID < routes[j].ID
 	})
 	return routes
+}
+
+func (e *RouteEngine) RefreshNow(ctx context.Context) error {
+	e.updateRoutes(ctx, true)
+	return nil
 }
