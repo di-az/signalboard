@@ -166,40 +166,13 @@ func (e *RouteEngine) computeRouteMatrix(
 	log.Printf("ELEMENTS %d:\n%v\n", len(elements), elements)
 
 	// Map response to in-memory routes
-	var routeMeasurements []domain.RouteMeasurement
-	for _, el := range elements {
-		// Ignore cross routes
-		if el.OriginIndex != el.DestinationIndex {
-			continue
-		}
-
-		// Check for valid response body matrix
-		idx := el.OriginIndex
-		if idx < 0 || idx >= len(routes) {
-			log.Printf("invalid index from matrix response: %d", idx)
-			continue
-		}
-
-		log.Printf(
-			"Matrix element: origin=%d dest=%d duration=%s distance=%d",
-			el.OriginIndex,
-			el.DestinationIndex,
-			el.Duration,
-			el.DistanceMeters,
-		)
-
-		duration, err := time.ParseDuration(el.Duration)
-		if err != nil {
-			return nil, err
-		}
-
-		r := routes[idx]
-		routeMeasurements = append(routeMeasurements, domain.RouteMeasurement{
-			RouteID:         r.ID,
-			DistanceMeters:  el.DistanceMeters,
-			DurationSeconds: duration,
-			RecordedAt:      now,
-		})
+	routeMeasurements, err := mapMatrixElements(
+		routes,
+		elements,
+		now,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	// Debugging lines
