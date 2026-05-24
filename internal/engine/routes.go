@@ -157,13 +157,6 @@ func (e *RouteEngine) computeRouteMatrix(
 		return nil, fmt.Errorf("matrix request failed: %s", resp.Status)
 	}
 
-	// var prettyResp bytes.Buffer
-	// if err := json.Indent(&prettyResp, bodyBytes, "", "  "); err == nil {
-	// 	log.Printf("Matrix response:\n%s\n", prettyResp.String())
-	// } else {
-	// 	log.Printf("Matrix response (raw):\n%s\n", string(bodyBytes))
-	// }
-
 	var elements []RouteMatrixElement
 	if err := json.Unmarshal(bodyBytes, &elements); err != nil {
 		return nil, err
@@ -180,7 +173,21 @@ func (e *RouteEngine) computeRouteMatrix(
 			continue
 		}
 
+		// Check for valid response body matrix
 		idx := el.OriginIndex
+		if idx < 0 || idx >= len(routes) {
+			log.Printf("invalid index from matrix response: %d", idx)
+			continue
+		}
+
+		log.Printf(
+			"Matrix element: origin=%d dest=%d duration=%s distance=%d",
+			el.OriginIndex,
+			el.DestinationIndex,
+			el.Duration,
+			el.DistanceMeters,
+		)
+
 		duration, err := time.ParseDuration(el.Duration)
 		if err != nil {
 			return nil, err
@@ -195,14 +202,21 @@ func (e *RouteEngine) computeRouteMatrix(
 		})
 	}
 
-	log.Printf("ROUTES:\n")
-	for _, route := range routes {
-		log.Printf("%s %s", route.Origin.Name, route.Destination.Name)
-	}
-	log.Printf("ROUTE MEASURES %d", len(routeMeasurements))
-	for _, route := range routeMeasurements {
-		log.Printf("Route measure: %d %d %s %s\n", route.RouteID, route.DistanceMeters, route.DurationSeconds, route.RecordedAt)
-	}
+	// Debugging lines
+	// log.Printf("ROUTES:\n")
+	// for _, route := range routes {
+	// 	log.Printf("%s %s", route.Origin.Name, route.Destination.Name)
+	// }
+	// log.Printf("ROUTE MEASURES %d", len(routeMeasurements))
+	// for _, route := range routeMeasurements {
+	// 	log.Printf(
+	// 		"Route measure: %d %d %s %s\n",
+	// 		route.RouteID,
+	// 		route.DistanceMeters,
+	// 		route.DurationSeconds,
+	// 		route.RecordedAt,
+	// 	)
+	// }
 
 	// Persist measurement
 	if err := e.Store.UpdateMeasurements(ctx, routeMeasurements); err != nil {
