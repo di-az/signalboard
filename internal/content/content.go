@@ -1,7 +1,5 @@
 package content
 
-type MetricContent struct {
-	Label string
-	Value string
-	Unit  string
+type Content interface {
+	Type() string
 }
