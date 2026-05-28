@@ -35,7 +35,7 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid UPDATE_RATE: %w", err)
 	}
 
-	cfg.TickRate, err = getDuration("TICK_RATE", "10s")
+	cfg.TickRate, err = getDuration("TICK_RATE", "1m")
 	if err != nil {
 		return nil, fmt.Errorf("invalid TICK_RATE: %w", err)
 	}
