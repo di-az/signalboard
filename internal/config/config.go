@@ -8,12 +8,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Config contains application configuration settings
 type Config struct {
+	// SQLiteDB: Path to the SQLite database
 	SQLiteDB string
 
+	// GoogleMapsAPIKey: Key used to use the Google Routes API
 	GoogleMapsAPIKey string
-	UpdateRate       time.Duration
-	TickRate         time.Duration
+
+	// UpdateRate: Rate at which the maps route will perform a new query to obtain the commute time
+	UpdateRate time.Duration
+	// TickRate: Rate at which the engine runs a.k.a how frequent it performs its actions
+	TickRate time.Duration
 }
 
 func Load() (*Config, error) {
