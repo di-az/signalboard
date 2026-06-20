@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"signalboard/internal/engine"
 	"signalboard/internal/sources/commute"
 	"signalboard/internal/store"
 	"time"
@@ -15,14 +16,16 @@ const PORT = ":3333"
 
 type HttpServer struct {
 	store   *store.RouteStore
+	engine  *engine.Engine
 	commute *commute.CommuteSource
 }
 
 func NewHttpServer(
 	store *store.RouteStore,
+	engine *engine.Engine,
 	commuteSource *commute.CommuteSource,
 ) *HttpServer {
-	return &HttpServer{store: store, commute: commuteSource}
+	return &HttpServer{store: store, engine: engine, commute: commuteSource}
 }
 
 func (s *HttpServer) Run(ctx context.Context) error {
@@ -129,6 +132,6 @@ func (s *HttpServer) CheckHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *HttpServer) EngineStatus(w http.ResponseWriter, r *http.Request) {
-	status := s.commute.Status()
+	status := s.engine.Status()
 	writeJSON(w, http.StatusOK, status)
 }

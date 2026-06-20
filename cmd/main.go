@@ -48,10 +48,7 @@ func main() {
 		cfg.TickRate,
 		commuteSource,
 	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	server := server.NewHttpServer(store, commuteSource)
+	server := server.NewHttpServer(store, engine, commuteSource)
 
 	// Run HTTP server
 	go func() {
