@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"signalboard/internal/engine"
+	"signalboard/internal/sources/commute"
 	"signalboard/internal/store"
 	"time"
 )
@@ -14,12 +14,15 @@ import (
 const PORT = ":3333"
 
 type HttpServer struct {
-	store  *store.RouteStore
-	engine *engine.RouteEngine
+	store   *store.RouteStore
+	commute *commute.CommuteSource
 }
 
-func NewHttpServer(store *store.RouteStore, engine *engine.RouteEngine) *HttpServer {
-	return &HttpServer{store: store, engine: engine}
+func NewHttpServer(
+	store *store.RouteStore,
+	commuteSource *commute.CommuteSource,
+) *HttpServer {
+	return &HttpServer{store: store, commute: commuteSource}
 }
 
 func (s *HttpServer) Run(ctx context.Context) error {
@@ -59,7 +62,7 @@ func (s *HttpServer) Run(ctx context.Context) error {
 func (s *HttpServer) GetRoutes(w http.ResponseWriter, r *http.Request) {
 	log.Println("GET /routes")
 
-	routes := s.engine.GetRoutes()
+	routes := s.commute.GetRoutes()
 	response := make([]RouteResponse, 0, len(routes))
 
 	for _, route := range routes {
@@ -74,7 +77,7 @@ func (s *HttpServer) GetActiveRoutes(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	active := make([]RouteResponse, 0)
 
-	routes := s.engine.GetRoutes()
+	routes := s.commute.GetRoutes()
 	for _, route := range routes {
 		if route.Schedule.ShouldRunNow(now) {
 			active = append(active, NewRouteResponse(route))
@@ -88,7 +91,7 @@ func (s *HttpServer) GetActiveRoutes(w http.ResponseWriter, r *http.Request) {
 func (s *HttpServer) RefreshRoutes(w http.ResponseWriter, r *http.Request) {
 	log.Println("POST /routes/refresh")
 
-	err := s.engine.RefreshNow(r.Context())
+	err := s.commute.Refresh(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, errors.New("failed to refresh routes"))
 		return
@@ -109,8 +112,8 @@ func (s *HttpServer) RefreshRoutes(w http.ResponseWriter, r *http.Request) {
 // 		return
 // 	}
 //
-// 	origin := s.engine.GetLocationByID(route.OriginID)
-// 	destination := s.engine.GetLocationByID(route.DestinationID)
+// 	origin := s.commuteSource.GetLocationByID(route.OriginID)
+// 	destination := s.commute.GetLocationByID(route.DestinationID)
 // 	if origin == nil || destination == nil {
 // 		writeError(w, errors.New("missing origin or destination"))
 // 		return
@@ -126,6 +129,6 @@ func (s *HttpServer) CheckHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *HttpServer) EngineStatus(w http.ResponseWriter, r *http.Request) {
-	status := s.engine.Status()
+	status := s.commute.Status()
 	writeJSON(w, http.StatusOK, status)
 }

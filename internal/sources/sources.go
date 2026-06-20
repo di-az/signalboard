@@ -1,7 +1,12 @@
 package sources
 
-import "signalboard/internal/content"
+import (
+	"context"
+	// "signalboard/internal/content"
+)
 
 type Source interface {
-	Content() []content.Content
+	Name() string
+	Refresh(ctx context.Context) error
+	// Content() []content.Content
 }
