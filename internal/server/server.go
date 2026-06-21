@@ -37,8 +37,8 @@ func (s *HttpServer) Run(ctx context.Context) error {
 	// mux.HandleFunc("/routes", s.GetRoutes)
 	// mux.HandleFunc("/routes/active", s.GetActiveRoutes)
 	// mux.HandleFunc("/routes/refresh", s.RefreshRoutes)
-	// mux.HandleFunc("/health", s.CheckHealth)
-	// mux.HandleFunc("/engine/status", s.EngineStatus)
+	mux.HandleFunc("/health", s.CheckHealth)
+	mux.HandleFunc("/engine/status", s.EngineStatus)
 	s.registerSourceRoutes(mux)
 
 	server := &http.Server{
@@ -111,12 +111,3 @@ func (s *HttpServer) Run(ctx context.Context) error {
 //			"status": "refresh triggered",
 //		})
 //	}
-func (s *HttpServer) CheckHealth(w http.ResponseWriter, r *http.Request) {
-	healthMessage := map[string]string{"status": "ok"}
-	WriteJSON(w, http.StatusOK, healthMessage)
-}
-
-func (s *HttpServer) EngineStatus(w http.ResponseWriter, r *http.Request) {
-	status := s.engine.Status()
-	WriteJSON(w, http.StatusOK, status)
-}
