@@ -1,7 +1,6 @@
-package engine
+package commute
 
 import (
-	"signalboard/internal/domain"
 	"testing"
 	"time"
 )
@@ -9,7 +8,7 @@ import (
 func TestMapMatrixElements(t *testing.T) {
 	now := time.Date(2026, 4, 20, 12, 0, 0, 0, time.Local)
 
-	routes := []*domain.Route{
+	routes := []*Route{
 		{
 			ID: 1,
 		},
@@ -132,7 +131,7 @@ func TestMapMatrixElements(t *testing.T) {
 func TestMapMatrixElementsMapsCorrectRoutes(t *testing.T) {
 	now := time.Date(2026, 4, 20, 12, 0, 0, 0, time.Local)
 
-	routes := []*domain.Route{
+	routes := []*Route{
 		{
 			ID: 100,
 		},

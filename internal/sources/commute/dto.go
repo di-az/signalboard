@@ -1,7 +1,6 @@
-package server
+package commute
 
 import (
-	"signalboard/internal/domain"
 	"sort"
 	"time"
 )
@@ -16,7 +15,7 @@ type RouteResponse struct {
 	ActiveNow       bool       `json:"active_now"`
 }
 
-func NewRouteResponse(route domain.Route) RouteResponse {
+func NewRouteResponse(route Route) RouteResponse {
 	r := RouteResponse{
 		ID:          route.ID,
 		Origin:      route.Origin.Name,

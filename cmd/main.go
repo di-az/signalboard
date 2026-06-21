@@ -11,7 +11,6 @@ import (
 	"signalboard/internal/engine"
 	"signalboard/internal/server"
 	"signalboard/internal/sources/commute"
-	"signalboard/internal/store"
 	"syscall"
 )
 
@@ -31,7 +30,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	store := store.NewRouteStore(sqliteDB)
+	store := commute.NewRouteStore(sqliteDB)
 
 	commuteSource, err := commute.NewCommuteSource(
 		ctx,
@@ -48,7 +47,7 @@ func main() {
 		cfg.TickRate,
 		commuteSource,
 	)
-	server := server.NewHttpServer(store, engine, commuteSource)
+	server := server.NewHttpServer(engine)
 
 	// Run HTTP server
 	go func() {

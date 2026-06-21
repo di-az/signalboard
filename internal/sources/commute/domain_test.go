@@ -1,4 +1,4 @@
-package domain
+package commute
 
 import (
 	"testing"
