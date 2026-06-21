@@ -42,8 +42,10 @@ func (s *HttpServer) Run(ctx context.Context) error {
 	s.registerSourceRoutes(mux)
 
 	server := &http.Server{
-		Addr:    PORT,
-		Handler: withCORS(mux),
+		Addr: PORT,
+		Handler: withLogging(
+			withCORS(mux),
+		),
 	}
 
 	ln, err := net.Listen("tcp", PORT)

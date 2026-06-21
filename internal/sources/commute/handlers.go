@@ -10,8 +10,6 @@ import (
 
 func (s *CommuteSource) GetRoutesHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s", r.Method, r.RequestURI)
-
 		routes := s.GetRoutes()
 		response := make([]RouteResponse, 0, len(routes))
 
