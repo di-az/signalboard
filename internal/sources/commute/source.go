@@ -58,6 +58,11 @@ func (s *CommuteSource) Name() string {
 }
 
 func (s *CommuteSource) Refresh(ctx context.Context) error {
+	s.updateRoutes(ctx, false)
+	return nil
+}
+
+func (s *CommuteSource) ForceRefresh(ctx context.Context) error {
 	s.updateRoutes(ctx, true)
 	return nil
 }
@@ -68,13 +73,6 @@ func (s *CommuteSource) Endpoints() []sources.Endpoint {
 		{Method: "GET", Path: "/active", Handler: s.GetActiveRoutesHandler()},
 	}
 }
-
-// func (s *CommuteSource) RegisterRoutes() {
-// 	router := server.NewRouter("/" + s.Name())
-//
-// 	router.RegisterNewRoute("GET", "", s.GetRoutesHandler())
-// 	router.RegisterNewRoute("GET", "/active", s.GetActiveRoutesHandler())
-// }
 
 func (s *CommuteSource) GetRoutes() []Route {
 	s.mu.RLock()
