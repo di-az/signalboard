@@ -36,7 +36,7 @@ export default function App() {
     const [refreshing, setRefreshing] = useState(false)
 
     async function fetchRoutes() {
-        const res = await fetch("http://localhost:3333/commute/routes/active")
+        const res = await fetch("http://localhost:3333/commute/active")
         const data = await res.json()
         setRoutes(data || [])
     }
@@ -51,7 +51,7 @@ export default function App() {
         setRefreshing(true)
 
         try {
-            await fetch("http://localhost:3333/commute/routes/refresh", {
+            await fetch("http://localhost:3333/commute/refresh", {
                 method: "POST",
             })
 
