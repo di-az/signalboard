@@ -1,6 +1,9 @@
 package server
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -17,6 +20,14 @@ func withCORS(next http.Handler) http.Handler {
 		if r.Method == http.MethodOptions {
 			return
 		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func withLogging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL.Path)
 
 		next.ServeHTTP(w, r)
 	})

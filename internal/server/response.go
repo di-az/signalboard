@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func writeJSON(w http.ResponseWriter, status int, data any) error {
+func WriteJSON(w http.ResponseWriter, status int, data any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -16,7 +16,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) error {
 	return json.NewEncoder(w).Encode(data)
 }
 
-func writeError(w http.ResponseWriter, status int, err error) {
+func WriteError(w http.ResponseWriter, status int, err error) {
 	// log.Println(err.Error())
-	_ = writeJSON(w, status, err.Error())
+	_ = WriteJSON(w, status, err.Error())
 }

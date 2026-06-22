@@ -1,4 +1,4 @@
-package engine
+package commute
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"signalboard/internal/domain"
 	"time"
 )
 
@@ -52,7 +51,7 @@ type RouteMatrixElement struct {
 	Duration         string `json:"duration"`
 }
 
-func toMatrixOrigin(loc *domain.Location) (matrixOrigin, error) {
+func toMatrixOrigin(loc *Location) (matrixOrigin, error) {
 	origin := matrixOrigin{
 		Waypoint: matrixWaypoint{
 			Location: matrixLocation{
@@ -65,7 +64,7 @@ func toMatrixOrigin(loc *domain.Location) (matrixOrigin, error) {
 	return origin, nil
 }
 
-func toMatrixDestination(loc *domain.Location) (matrixDestination, error) {
+func toMatrixDestination(loc *Location) (matrixDestination, error) {
 	destination := matrixDestination{
 		Waypoint: matrixWaypoint{
 			Location: matrixLocation{
@@ -80,11 +79,13 @@ func toMatrixDestination(loc *domain.Location) (matrixDestination, error) {
 
 // Computing Route Matrix using Google Maps Route Matrix.
 // https://developers.google.com/maps/documentation/routes/compute-route-matrix-over
-func (e *RouteEngine) computeRouteMatrix(
+func (s *CommuteSource) computeRouteMatrix(
 	ctx context.Context,
-	routes []*domain.Route,
-) ([]domain.RouteMeasurement, error) {
-	log.Println("REQUESTING MATRIX")
+	routes []*Route,
+) ([]RouteMeasurement, error) {
+	// log.Println("Helper: NOT REQUESTING MATRIX")
+	// return nil, nil
+	log.Println("Updating routes!")
 	if len(routes) == 0 {
 		return nil, nil
 	}
@@ -93,16 +94,13 @@ func (e *RouteEngine) computeRouteMatrix(
 	var destinations []matrixDestination
 	// var origins []matrixOrigin
 
+	// Pick first route as single origin for Google Request pricing optimization
 	origin, err := toMatrixOrigin(routes[0].Origin)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, r := range routes {
-		if err != nil {
-			return nil, err
-		}
-
 		d, err := toMatrixDestination(r.Destination)
 		if err != nil {
 			return nil, err
@@ -131,7 +129,7 @@ func (e *RouteEngine) computeRouteMatrix(
 		return nil, err
 	}
 
-	log.Printf("Matrix request:\n%s\n", prettyJSON.String())
+	// log.Printf("Matrix request:\n%s\n", prettyJSON.String())
 
 	req, err := http.NewRequestWithContext(
 		ctx,
@@ -145,10 +143,10 @@ func (e *RouteEngine) computeRouteMatrix(
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Goog-Api-Key", e.apiKey)
+	req.Header.Set("X-Goog-Api-Key", s.apiKey)
 	req.Header.Set("X-Goog-FieldMask", "originIndex,destinationIndex,duration,distanceMeters")
 
-	resp, err := e.client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -159,8 +157,8 @@ func (e *RouteEngine) computeRouteMatrix(
 		return nil, err
 	}
 	// DEBUG: Debugging lines
-	log.Printf("DEBUG:\n")
-	log.Print(string(bodyBytes))
+	// log.Printf("DEBUG:\n")
+	// log.Print(string(bodyBytes))
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("Matrix error response:\n%s\n", string(bodyBytes))
@@ -173,7 +171,6 @@ func (e *RouteEngine) computeRouteMatrix(
 	}
 
 	now := time.Now()
-	log.Printf("ELEMENTS %d:\n%v\n", len(elements), elements)
 
 	// Map response to in-memory routes
 	routeMeasurements, err := mapMatrixElements(
@@ -186,23 +183,23 @@ func (e *RouteEngine) computeRouteMatrix(
 	}
 
 	// DEBUG: Debugging lines
-	log.Printf("ROUTES:\n")
-	for _, route := range routes {
-		log.Printf("%s %s", route.Origin.Name, route.Destination.Name)
-	}
-	log.Printf("ROUTE MEASURES %d", len(routeMeasurements))
-	for _, route := range routeMeasurements {
-		log.Printf(
-			"Route measure: %d %d %s %s\n",
-			route.RouteID,
-			route.DistanceMeters,
-			route.DurationSeconds,
-			route.RecordedAt,
-		)
-	}
+	// log.Printf("ROUTES:\n")
+	// for _, route := range routes {
+	// 	log.Printf("%s %s", route.Origin.Name, route.Destination.Name)
+	// }
+	// log.Printf("ROUTE MEASURES %d", len(routeMeasurements))
+	// for _, route := range routeMeasurements {
+	// 	log.Printf(
+	// 		"Route measure: %d %d %s %s\n",
+	// 		route.RouteID,
+	// 		route.DistanceMeters,
+	// 		route.DurationSeconds,
+	// 		route.RecordedAt,
+	// 	)
+	// }
 
 	// Persist measurement
-	if err := e.Store.UpdateMeasurements(ctx, routeMeasurements); err != nil {
+	if err := s.Store.UpdateMeasurements(ctx, routeMeasurements); err != nil {
 		return nil, err
 	}
 

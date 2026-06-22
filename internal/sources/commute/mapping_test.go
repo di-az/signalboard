@@ -1,7 +1,6 @@
-package engine
+package commute
 
 import (
-	"signalboard/internal/domain"
 	"testing"
 	"time"
 )
@@ -9,13 +8,9 @@ import (
 func TestMapMatrixElements(t *testing.T) {
 	now := time.Date(2026, 4, 20, 12, 0, 0, 0, time.Local)
 
-	routes := []*domain.Route{
-		{
-			ID: 1,
-		},
-		{
-			ID: 2,
-		},
+	routes := []*Route{
+		{ID: 1},
+		{ID: 2},
 	}
 
 	tests := []struct {
@@ -25,7 +20,7 @@ func TestMapMatrixElements(t *testing.T) {
 		expectError   bool
 	}{
 		{
-			name: "maps diagonal routes only",
+			name: "maps destinations to routes",
 			elements: []RouteMatrixElement{
 				{
 					OriginIndex:      0,
@@ -35,18 +30,6 @@ func TestMapMatrixElements(t *testing.T) {
 				},
 				{
 					OriginIndex:      0,
-					DestinationIndex: 1,
-					DistanceMeters:   9999,
-					Duration:         "999s",
-				},
-				{
-					OriginIndex:      1,
-					DestinationIndex: 0,
-					DistanceMeters:   9999,
-					Duration:         "999s",
-				},
-				{
-					OriginIndex:      1,
 					DestinationIndex: 1,
 					DistanceMeters:   10000,
 					Duration:         "1200s",
@@ -69,30 +52,11 @@ func TestMapMatrixElements(t *testing.T) {
 			expectError:   true,
 		},
 		{
-			name: "out of bounds index ignored",
-			elements: []RouteMatrixElement{
-				{
-					OriginIndex:      99,
-					DestinationIndex: 99,
-					DistanceMeters:   5000,
-					Duration:         "600s",
-				},
-			},
-			expectedCount: 0,
-			expectError:   false,
-		},
-		{
-			name: "cross routes ignored",
+			name: "out of bounds destination index ignored",
 			elements: []RouteMatrixElement{
 				{
 					OriginIndex:      0,
-					DestinationIndex: 1,
-					DistanceMeters:   5000,
-					Duration:         "600s",
-				},
-				{
-					OriginIndex:      1,
-					DestinationIndex: 0,
+					DestinationIndex: 99,
 					DistanceMeters:   5000,
 					Duration:         "600s",
 				},
@@ -129,10 +93,47 @@ func TestMapMatrixElements(t *testing.T) {
 	}
 }
 
+func TestMapMatrixElementsMapsDestinationIndexToRoute(t *testing.T) {
+	now := time.Now()
+
+	routes := []*Route{
+		{ID: 10},
+		{ID: 20},
+	}
+
+	elements := []RouteMatrixElement{
+		{
+			OriginIndex:      0,
+			DestinationIndex: 0,
+			DistanceMeters:   5000,
+			Duration:         "600s",
+		},
+		{
+			OriginIndex:      0,
+			DestinationIndex: 1,
+			DistanceMeters:   10000,
+			Duration:         "1200s",
+		},
+	}
+
+	measurements, err := mapMatrixElements(routes, elements, now)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if measurements[0].RouteID != 10 {
+		t.Fatalf("expected route id 10 got %d", measurements[0].RouteID)
+	}
+
+	if measurements[1].RouteID != 20 {
+		t.Fatalf("expected route id 20 got %d", measurements[1].RouteID)
+	}
+}
+
 func TestMapMatrixElementsMapsCorrectRoutes(t *testing.T) {
 	now := time.Date(2026, 4, 20, 12, 0, 0, 0, time.Local)
 
-	routes := []*domain.Route{
+	routes := []*Route{
 		{
 			ID: 100,
 		},

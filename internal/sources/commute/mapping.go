@@ -1,18 +1,17 @@
-package engine
+package commute
 
 import (
 	"fmt"
 	"log"
-	"signalboard/internal/domain"
 	"time"
 )
 
 func mapMatrixElements(
-	routes []*domain.Route,
+	routes []*Route,
 	elements []RouteMatrixElement,
 	now time.Time,
-) ([]domain.RouteMeasurement, error) {
-	var measurements []domain.RouteMeasurement
+) ([]RouteMeasurement, error) {
+	var measurements []RouteMeasurement
 
 	for _, el := range elements {
 		idx := el.DestinationIndex
@@ -23,13 +22,13 @@ func mapMatrixElements(
 			continue
 		}
 
-		log.Printf(
-			"Matrix element: origin=%d dest=%d duration=%s distance=%d",
-			el.OriginIndex,
-			el.DestinationIndex,
-			el.Duration,
-			el.DistanceMeters,
-		)
+		// log.Printf(
+		// 	"Matrix element: origin=%d dest=%d duration=%s distance=%d",
+		// 	el.OriginIndex,
+		// 	el.DestinationIndex,
+		// 	el.Duration,
+		// 	el.DistanceMeters,
+		// )
 
 		duration, err := time.ParseDuration(el.Duration)
 		if err != nil {
@@ -42,7 +41,7 @@ func mapMatrixElements(
 
 		r := routes[idx]
 
-		measurements = append(measurements, domain.RouteMeasurement{
+		measurements = append(measurements, RouteMeasurement{
 			RouteID:         r.ID,
 			DistanceMeters:  el.DistanceMeters,
 			DurationSeconds: duration,

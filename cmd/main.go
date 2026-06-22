@@ -10,12 +10,9 @@ import (
 	"signalboard/internal/db"
 	"signalboard/internal/engine"
 	"signalboard/internal/server"
-	"signalboard/internal/store"
+	"signalboard/internal/sources/commute"
 	"syscall"
 )
-
-// const UpdateRate = 10 * time.Minute
-// const tickRate = 10 * time.Second
 
 func main() {
 	cfg, err := config.Load()
@@ -33,9 +30,9 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	store := store.NewRouteStore(sqliteDB)
+	store := commute.NewRouteStore(sqliteDB)
 
-	engine, err := engine.NewRouteEngine(
+	commuteSource, err := commute.NewCommuteSource(
 		ctx,
 		store,
 		cfg.UpdateRate,
@@ -45,7 +42,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	server := server.NewHttpServer(store, engine)
+
+	engine := engine.NewEngine(
+		cfg.TickRate,
+		commuteSource,
+	)
+	server := server.NewHttpServer(engine)
 
 	// Run HTTP server
 	go func() {
