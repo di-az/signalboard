@@ -69,8 +69,9 @@ func (s *CommuteSource) ForceRefresh(ctx context.Context) error {
 
 func (s *CommuteSource) Endpoints() []sources.Endpoint {
 	return []sources.Endpoint{
-		{Method: "GET", Path: "/", Handler: s.GetRoutesHandler()},
+		{Method: "GET", Path: "", Handler: s.GetRoutesHandler()},
 		{Method: "GET", Path: "/active", Handler: s.GetActiveRoutesHandler()},
+		{Method: "POST", Path: "/refresh", Handler: s.RefreshRoutes()},
 	}
 }
 

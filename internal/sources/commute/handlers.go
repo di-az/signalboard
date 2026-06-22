@@ -2,7 +2,6 @@ package commute
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"signalboard/internal/server"
 	"time"
@@ -22,8 +21,6 @@ func (s *CommuteSource) GetRoutesHandler() http.HandlerFunc {
 
 func (s *CommuteSource) GetActiveRoutesHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("GET /routes/active")
-
 		now := time.Now()
 		active := make([]RouteResponse, 0)
 
@@ -41,8 +38,6 @@ func (s *CommuteSource) GetActiveRoutesHandler() http.HandlerFunc {
 
 func (s *CommuteSource) RefreshRoutes() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("POST /routes/refresh")
-
 		err := s.Refresh(r.Context())
 		if err != nil {
 			server.WriteError(

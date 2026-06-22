@@ -94,6 +94,7 @@ func (s *CommuteSource) computeRouteMatrix(
 	var destinations []matrixDestination
 	// var origins []matrixOrigin
 
+	// Pick first route as single origin for Google Request pricing optimization
 	origin, err := toMatrixOrigin(routes[0].Origin)
 	if err != nil {
 		return nil, err
