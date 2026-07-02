@@ -14,6 +14,7 @@ type Config struct {
 	SQLiteDB string
 
 	// GoogleMapsAPIKey: Key used to use the Google Routes API
+	//TODO: REmove this from GeneralConfigModule
 	GoogleMapsAPIKey string
 
 	// UpdateRate: Rate at which the maps route will perform a new query to obtain the commute time
@@ -31,7 +32,7 @@ func Load() (*Config, error) {
 	cfg := &Config{}
 
 	// Required
-	cfg.GoogleMapsAPIKey = mustGet("GOOGLE_MAPS_API_KEY")
+	cfg.GoogleMapsAPIKey = mustGet("COMMUTE_GOOGLE_MAPS_API_KEY")
 
 	// Optional with defaults
 	cfg.SQLiteDB = getString("SQLITE_PATH", "./routes.db")
