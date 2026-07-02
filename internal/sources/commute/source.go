@@ -17,7 +17,6 @@ type CommuteSource struct {
 	Routes map[int]*Route
 
 	UpdateRate time.Duration
-	TickRate   time.Duration
 	running    atomic.Bool
 	lastTick   atomic.Value
 	client     *http.Client
@@ -27,9 +26,7 @@ type CommuteSource struct {
 func NewCommuteSource(
 	ctx context.Context,
 	store *CommuteStore,
-	updateRate time.Duration,
-	tickRate time.Duration,
-	apiKey string,
+	cfg *Config,
 ) (*CommuteSource, error) {
 	routes, err := store.GetRoutesWithSchedules(ctx)
 	if err != nil {
@@ -44,10 +41,9 @@ func NewCommuteSource(
 	source := &CommuteSource{
 		Routes:     routeMap,
 		Store:      store,
-		UpdateRate: updateRate,
-		TickRate:   tickRate,
+		UpdateRate: cfg.UpdateRate,
 		client:     &http.Client{Timeout: 5 * time.Second},
-		apiKey:     apiKey,
+		apiKey:     cfg.GoogleMapsAPIKey,
 	}
 
 	return source, nil

@@ -8,49 +8,40 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config contains application configuration settings
+// Config contains application-wide configuration settings
 type Config struct {
 	// SQLiteDB: Path to the SQLite database
 	SQLiteDB string
 
-	// GoogleMapsAPIKey: Key used to use the Google Routes API
-	//TODO: REmove this from GeneralConfigModule
-	GoogleMapsAPIKey string
-
-	// UpdateRate: Rate at which the maps route will perform a new query to obtain the commute time
-	UpdateRate time.Duration
-	// TickRate: Rate at which the engine runs a.k.a how frequent it performs its actions
+	// TickRate: How often the engine executes
 	TickRate time.Duration
+
+	// // GoogleMapsAPIKey: Key used to use the Google Routes API
+	// //TODO: REmove this from GeneralConfigModule
+	// GoogleMapsAPIKey string
+	// // UpdateRate: Rate at which the maps route will perform a new query to obtain the commute time
+	// UpdateRate time.Duration
 }
 
 func Load() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		return nil, err
 	}
 
-	cfg := &Config{}
-
-	// Required
-	cfg.GoogleMapsAPIKey = mustGet("COMMUTE_GOOGLE_MAPS_API_KEY")
-
-	// Optional with defaults
-	cfg.SQLiteDB = getString("SQLITE_PATH", "./routes.db")
-
-	cfg.UpdateRate, err = getDuration("UPDATE_RATE", "10m")
+	tickRate, err := GetDuration("TICK_RATE", "1m")
 	if err != nil {
-		return nil, fmt.Errorf("invalid UPDATE_RATE: %w", err)
+		return nil, fmt.Errorf("Invalid TICK_RATE: %w", err)
 	}
 
-	cfg.TickRate, err = getDuration("TICK_RATE", "1m")
-	if err != nil {
-		return nil, fmt.Errorf("invalid TICK_RATE: %w", err)
-	}
+	SQLiteDB := GetString("SQLITE_PATH", "./routes.db")
 
-	return cfg, nil
+	return &Config{
+		SQLiteDB: SQLiteDB,
+		TickRate: tickRate,
+	}, nil
 }
 
-func mustGet(key string) string {
+func MustGet(key string) string {
 	val := os.Getenv(key)
 	if val == "" {
 		panic(fmt.Sprintf("missing required env var: %s", key))
@@ -58,7 +49,7 @@ func mustGet(key string) string {
 	return val
 }
 
-func getString(key, defaultVal string) string {
+func GetString(key, defaultVal string) string {
 	val := os.Getenv(key)
 	if val == "" {
 		return defaultVal
@@ -66,7 +57,7 @@ func getString(key, defaultVal string) string {
 	return val
 }
 
-func getDuration(key, def string) (time.Duration, error) {
+func GetDuration(key, def string) (time.Duration, error) {
 	val := os.Getenv(key)
 	if val == "" {
 		val = def

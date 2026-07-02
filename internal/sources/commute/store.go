@@ -10,7 +10,7 @@ type CommuteStore struct {
 	db *CommuteDb
 }
 
-func NewRouteStore(db *db.SQLite) *CommuteStore {
+func NewCommuteStore(db *db.SQLite) *CommuteStore {
 	return &CommuteStore{db: NewCommuteDb(db)}
 }
 

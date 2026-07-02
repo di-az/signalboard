@@ -85,7 +85,7 @@ func (s *CommuteSource) computeRouteMatrix(
 ) ([]RouteMeasurement, error) {
 	// log.Println("Helper: NOT REQUESTING MATRIX")
 	// return nil, nil
-	log.Println("Updating routes!")
+	log.Println("Updating routes using Google Routing Matrix!")
 	if len(routes) == 0 {
 		return nil, nil
 	}

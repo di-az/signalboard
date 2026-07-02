@@ -15,12 +15,17 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
+	appCfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("error loading config: %v", err)
 	}
 
-	sqliteDB, err := db.NewSQLite(cfg.SQLiteDB)
+	sqliteDB, err := db.NewSQLite(appCfg.SQLiteDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	commuteCfg, err := commute.LoadConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,21 +35,19 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	store := commute.NewRouteStore(sqliteDB)
+	store := commute.NewCommuteStore(sqliteDB)
 
 	commuteSource, err := commute.NewCommuteSource(
 		ctx,
 		store,
-		cfg.UpdateRate,
-		cfg.TickRate,
-		cfg.GoogleMapsAPIKey,
+		commuteCfg,
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	engine := engine.NewEngine(
-		cfg.TickRate,
+		appCfg.TickRate,
 		commuteSource,
 	)
 	server := server.NewHttpServer(engine)
