@@ -1,3 +1,7 @@
+# development files
+.tmuxinator.yml
+/tmp/
+
 # env
 .env
 
