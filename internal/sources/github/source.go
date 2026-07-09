@@ -1,14 +1,34 @@
 package github
 
-import "time"
+import (
+	"signalboard/internal/sources"
+	"sync"
+)
 
-type Commit struct {
-	Repository string
-	AuthorDate string
+type GithubSource struct {
+	mu sync.Mutex
+
+	client *Client
+
+	calendar ContributionCalendar
 }
 
-type Activity struct {
-	CommitsToday int
-	CommitsWeek  int
-	LastCommitAt *time.Time
+func NewGithubSource(client *Client) *GithubSource {
+	return &GithubSource{
+		client: client,
+	}
+}
+
+func (s *GithubSource) Name() string {
+	return "github"
+}
+
+func (s *GithubSource) Refresh() error {
+	// Run method to retrieve github contributions!
+	return nil
+}
+
+func (s *GithubSource) Endpoints() []sources.Endpoint {
+	// Return slice with sources.Endpoints that will be created onto the subpath
+	return nil
 }
