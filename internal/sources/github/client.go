@@ -18,7 +18,7 @@ type Client struct {
 	username   string
 }
 
-func NewClient(token, owner string) *Client {
+func NewClient(owner, token string) *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: defaultTimeout,

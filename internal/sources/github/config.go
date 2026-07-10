@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DefaultHistoryDays = 30
+	DefaultHistoryDays = 5
 	DefaultTimeout     = 10 * time.Second
 )
 
