@@ -3,6 +3,7 @@ package github
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -34,23 +35,34 @@ func (c *Client) Username() string {
 
 func (c *Client) ExecuteGrahpQL(
 	ctx context.Context,
-	body []byte,
+	req GraphQLRequest,
 ) ([]byte, error) {
-	req, err := http.NewRequestWithContext(
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to marshal GraphQL request: %w",
+			err,
+		)
+	}
+
+	httpReq, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
 		graphQLEndpoint,
 		bytes.NewReader(body),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"failed to create HTTP request: %w",
+			err,
+		)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, err
 	}
@@ -70,4 +82,21 @@ func (c *Client) ExecuteGrahpQL(
 	}
 
 	return data, nil
+}
+
+func (c *Client) GetContributionCalendar(
+	ctx context.Context,
+	from time.Time,
+	to time.Time,
+) ([]byte, error) {
+	req := GraphQLRequest{
+		Query: contributionCalendarQuery,
+		Variables: map[string]any{
+			"username": c.username,
+			"from":     from.UTC().Format(time.RFC3339),
+			"to":       to.UTC().Format(time.RFC3339),
+		},
+	}
+
+	return c.ExecuteGrahpQL(ctx, req)
 }

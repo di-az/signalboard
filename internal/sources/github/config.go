@@ -20,7 +20,7 @@ type Config struct {
 
 func LoadConfig() (*Config, error) {
 	username := config.GetString("GITHUB_USERNAME", "di-az")
-	token := config.GetString("GITHUB_TOKEN", "di-az")
+	token := config.GetString("GITHUB_TOKEN", "my_token")
 
 	return &Config{
 		Username:    username,
